@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Debug;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
@@ -20,9 +21,14 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.io.Console;
+import java.time.Instant;
 import java.util.ArrayList;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -31,10 +37,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     BroadcastReceiver mMessageReceiver;
     ArrayList<Marker> markers = new ArrayList<>();
 
+    Bitmap busImageNorth;
+    Bitmap busImageWest;
+    Bitmap busImageEast;
+    Bitmap busImageSouth;
+    Bitmap busImageNW;
+    Bitmap busImageNE;
+    Bitmap busImageSW;
+    Bitmap busImageSE;
+    Bitmap busImageStopped;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         //comment for github test
+        busImageStopped = BitmapFactory.decodeResource(getResources(), R.drawable.bus_stopped);
+        busImageNorth = BitmapFactory.decodeResource(getResources(), R.drawable.bus_up);
+        busImageWest = BitmapFactory.decodeResource(getResources(), R.drawable.bus_left);
+        busImageEast = BitmapFactory.decodeResource(getResources(), R.drawable.bus_right);
+        busImageSouth = BitmapFactory.decodeResource(getResources(), R.drawable.bus_down);
+        busImageNW = BitmapFactory.decodeResource(getResources(), R.drawable.bus_nw);
+        busImageNE = BitmapFactory.decodeResource(getResources(), R.drawable.bus_ne);
+        busImageSE = BitmapFactory.decodeResource(getResources(), R.drawable.bus_se);
+        busImageSW = BitmapFactory.decodeResource(getResources(), R.drawable.bus_sw);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
@@ -83,6 +108,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.style_json));
 
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -94,25 +120,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in Sydney and move the camera
         LatLng tampere = new LatLng(61.49911, 23.78712);
-        mMap.addMarker(new MarkerOptions().position(tampere).title("Marker in Sydney"));
+        mMap.addMarker(new MarkerOptions().position(tampere).title("Marker in Sydney :O"));
+
+        //line draw example
+        Polyline line = mMap.addPolyline(new PolylineOptions()
+                .add(new LatLng(61.0, 23.0), new LatLng(62.0, 24.0))
+                .width(5)
+                .color(Color.RED));
+
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(tampere));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tampere, 10f));
         mMap.setMaxZoomPreference(100f);
+        googleMap.getUiSettings().setMapToolbarEnabled(false);
     }
 
     public void addBusMarker(Double lat, Double lon, String line, String vehicleRef) {
 
         double oldLat = 0;
         double oldLon = 0;
-        int direction;
 
         for (Marker x : markers) {
             if (x.getSnippet().equals(vehicleRef)) {
                 oldLat = x.getPosition().latitude;
                 oldLon = x.getPosition().longitude;
+                markers.remove(x);
                 x.remove();
+                break;
+                //markers.remove(x);
             }
         }
+
+        Log.d("BTT", "array size : " +markers.size());
 
         double directionLat = lat - oldLat;
         double directionLon = lon - oldLon;
@@ -131,15 +169,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public Bitmap textAsBitmap(String text, float textSize, int degrees) {
+
+        long time = System.nanoTime();  //start timing
+
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStyle(Paint.Style.FILL);
         paint.setTextSize(textSize);
         paint.setColor(Color.BLACK);
         paint.setTextAlign(Paint.Align.CENTER);
+
         Bitmap busImage = getBusDirectionImage(degrees);
-        Bitmap busImageScaled = Bitmap.createScaledBitmap(busImage, 140, 140, true);
+        Bitmap busImageScaled = Bitmap.createScaledBitmap(busImage, 140, 140, false);
+
         Canvas canvas = new Canvas(busImageScaled);
         canvas.drawText(text, 70, 86, paint);
+
+        long endtime = System.nanoTime();
+        long finaltime = endtime - time;
+        Log.d("BTT", "Delay : " +finaltime );   //end timing
+
         return busImageScaled;
     }
 
@@ -148,40 +196,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Bitmap busImage;
 
         if (direction == 0) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_stopped);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_stopped);
+            return busImageStopped;
         }
         else if (direction >= -23 && direction <= 23) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_up);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_up);
+            return busImageNorth;
         }
         else if (direction >= 23 && direction <= 68) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_ne);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_ne);
+            return busImageNE;
         }
         else if (direction >= 69 && direction <= 113) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_right);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_right);
+            return busImageEast;
         }
         else if (direction >= 114 && direction <= 158) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_se);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_se);
+            return busImageSE;
         }
         else if (direction <= -24 && direction >= -68) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_nw);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_nw);
+            return busImageNW;
         }
         else if (direction <= -69 && direction >= -113) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_left);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_left);
+            return busImageWest;
         }
         else if (direction <= -114 && direction >= -158) {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_sw);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_sw);
+            return busImageSW;
         }
         else {
-            busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_down);
-            return busImage;
+            //busImage = BitmapFactory.decodeResource(getResources(), R.drawable.bus_down);
+            return busImageSouth;
         }
     }
 

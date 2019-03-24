@@ -67,7 +67,7 @@ public class UpdateMarkers extends IntentService {
                 Double lat = json5.getDouble("latitude");
                 sendMessage(lat, lon, line, vehicleRef);
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
