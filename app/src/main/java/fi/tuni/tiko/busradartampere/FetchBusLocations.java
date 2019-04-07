@@ -33,7 +33,7 @@ public class FetchBusLocations extends AsyncTask<Void, Void, String> {
 
         String result = "";
 
-        Log.d("BT", "lataus alkaa");
+        Log.d("BRT", "LATAUS ALKAA");
 
         try {
             //URL url = new URL("http://data.itsfactory.fi/journeys/api/1/vehicle-activity");

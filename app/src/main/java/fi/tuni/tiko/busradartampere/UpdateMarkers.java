@@ -53,6 +53,7 @@ public class UpdateMarkers extends IntentService {
         JSONObject json3;
         JSONObject json4;
         JSONObject json5;
+        JSONObject json6vehiclejourney;
 
         try {
             json1 = busData;
@@ -65,7 +66,12 @@ public class UpdateMarkers extends IntentService {
                 String vehicleRef = json4.getString("vehicleRef");
                 Double lon = json5.getDouble("longitude");
                 Double lat = json5.getDouble("latitude");
-                sendMessage(lat, lon, line, vehicleRef);
+
+                json6vehiclejourney = json4.getJSONObject("framedVehicleJourneyRef");
+                String busRouteURL = json6vehiclejourney.getString("datedVehicleJourneyRef");
+                //Log.d("BRT","dated vehicle journey ref : " + busRouteURL);
+
+                sendMessage(lat, lon, line, vehicleRef, busRouteURL);
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
@@ -81,7 +87,7 @@ public class UpdateMarkers extends IntentService {
 
     }
 
-    private void sendMessage(Double lat, Double lon, String line, String vehicleRef) {
+    private void sendMessage(Double lat, Double lon, String line, String vehicleRef, String routeURL) {
         Intent intent = new Intent("my-event");
         // add data
         //Log.d("BT", "ollaanko taalla33333");
@@ -90,6 +96,7 @@ public class UpdateMarkers extends IntentService {
         intent.putExtra("lon", lon);
         intent.putExtra("line", line);
         intent.putExtra("vehicleref", vehicleRef);
+        intent.putExtra("routeurl", routeURL);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -14,6 +15,7 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -36,6 +38,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     BroadcastReceiver mMessageReceiver;
     ArrayList<Marker> markers = new ArrayList<>();
+    ArrayList<Marker> markersRoute = new ArrayList<>();
+    ArrayList<String> allLines = new ArrayList<>();
+    ArrayList<String> filteredLines = new ArrayList<>();
+
+    boolean linesAdded = false;
 
     Bitmap busImageNorth;
     Bitmap busImageWest;
@@ -46,6 +53,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Bitmap busImageSW;
     Bitmap busImageSE;
     Bitmap busImageStopped;
+    Bitmap busstop;
+
+    SharedPreferences sharedpreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +70,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         busImageNE = BitmapFactory.decodeResource(getResources(), R.drawable.bus_ne);
         busImageSE = BitmapFactory.decodeResource(getResources(), R.drawable.bus_se);
         busImageSW = BitmapFactory.decodeResource(getResources(), R.drawable.bus_sw);
+        busstop = BitmapFactory.decodeResource(getResources(), R.drawable.busstop);
+
+        sharedpreferences = getSharedPreferences("fi.tuni.tiko.busradartampere", Context.MODE_PRIVATE);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
@@ -75,6 +88,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // Extract data included in the Intent
                 boolean restart = intent.getBooleanExtra("restart", false);
                 if (restart) {
+                    linesAdded = true;
                     fetchAgain();
                 }
                 else {
@@ -82,8 +96,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Double lat = intent.getDoubleExtra("lat", 0);
                     String line = intent.getStringExtra("line");
                     String vehicleRef = intent.getStringExtra("vehicleref");
+                    String routeURL = intent.getStringExtra("routeurl");
+
+
+                    String lineFilter = sharedpreferences.getString(line, "show");
+
+                    if (lineFilter.equals("show")) {
+                        addBusMarker(lat, lon, line, vehicleRef, routeURL);
+                        Log.d("BRT","add marker : " +line);
+                    }
+                    else {
+                        Log.d("BRT","remove marker : " +line);
+                        for (Marker marker : markers) {
+                            if (marker.getTitle().equals(line)) {
+                                markers.remove(marker);
+                                marker.remove();
+                                break;
+                            }
+                        }
+                    }
+
                     //Log.d("BT", "Got message: " + message);
-                    addBusMarker(lat, lon, line, vehicleRef);
+
+                    if (!linesAdded) {
+                        if (!allLines.contains(line)) {
+                            allLines.add(line);
+                        }
+                    }
+
+
+
+
+
+
                 }
             }
         };
@@ -92,6 +137,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         FetchBusLocations process = new FetchBusLocations(this);
         process.execute();
+
+        //drawRoute();
+
     }
 
 
@@ -114,6 +162,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public boolean onMarkerClick(Marker marker) {
                 Log.d("BT", "Marker clikced");
+                BusTagObject tag = (BusTagObject) marker.getTag();
+                if (tag != null) {
+                    drawRoute(tag.getRouteURL());
+                }
                 return false;
             }
         });
@@ -134,7 +186,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         googleMap.getUiSettings().setMapToolbarEnabled(false);
     }
 
-    public void addBusMarker(Double lat, Double lon, String line, String vehicleRef) {
+    public void addBusMarker(Double lat, Double lon, String line, String vehicleRef, String routeURL) {
 
         double oldLat = 0;
         double oldLon = 0;
@@ -165,6 +217,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Marker marker = mMap.addMarker(new MarkerOptions().position(newPoint).title(line).anchor(0.5f,0.5f));//TOIMIVA!
         marker.setIcon(BitmapDescriptorFactory.fromBitmap(textAsBitmap(line, 50, degrees2)));     // TOIMIVA   //SETICON KAATAA???
         marker.setSnippet(vehicleRef);
+
+        BusTagObject tag = new BusTagObject(routeURL);
+        marker.setTag(tag);
+
         markers.add(marker);
     }
 
@@ -245,5 +301,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void fetchAgain() {
         FetchBusLocations process = new FetchBusLocations(this);
         process.execute();
+    }
+
+    public void drawRoute(String url) {
+        clearMarkers();
+        FetchRoute process = new FetchRoute(this, url);
+        process.execute();
+    }
+
+    public void drawBusStop(Double lat, Double lon) {
+
+        LatLng tampere = new LatLng(lat, lon);
+        Marker marker = mMap.addMarker(new MarkerOptions().position(tampere).title("bus stop").anchor(0.5f,0.5f));
+        marker.setIcon(BitmapDescriptorFactory.fromBitmap(busstop));
+        markersRoute.add(marker);
+
+        //LatLng newPoint = new LatLng(lat, lon);     //TOIMIVA!
+        //Marker marker = mMap.addMarker(new MarkerOptions().position(newPoint).title("stop").anchor(0.5f,0.5f));//TOIMIVA!
+        //marker.setIcon(BitmapDescriptorFactory.fromBitmap(textAsBitmap(line, 50, degrees2)));     // TOIMIVA   //SETICON KAATAA???
+        //markers.add(marker);
+    }
+
+    public void clearMarkers() {
+        for (Marker marker : markersRoute) {
+            marker.remove();
+        }
+    }
+
+    public void launchFilterActivity(View view) {
+        Intent intent = new Intent(this, FilterActivity.class);
+        //String message = mMessageEditText.getText().toString();
+        //   intent.putExtra(EXTRA_MESSAGE, message);
+        intent.putStringArrayListExtra("allLines", allLines);
+        Log.d("BRT","arraylistin lena ennen starttia : " +allLines.size());
+        startActivity(intent);
     }
 }
