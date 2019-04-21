@@ -1,6 +1,8 @@
 package fi.tuni.tiko.busradartampere;
 
 import android.app.IntentService;
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -15,6 +17,7 @@ import org.json.JSONObject;
 public class UpdateMarkers extends IntentService {
 
     JSONObject busData;
+    int delay;
 
     public UpdateMarkers() {
         super("UpdateMarkers");
@@ -43,6 +46,7 @@ public class UpdateMarkers extends IntentService {
         if (bundle != null) {
             try {
                 busData = new JSONObject(bundle.getString("busdata"));
+                delay = bundle.getInt("delay");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -73,7 +77,8 @@ public class UpdateMarkers extends IntentService {
 
                 sendMessage(lat, lon, line, vehicleRef, busRouteURL);
                 try {
-                    Thread.sleep(50);
+                    //Log.d("BRT", "delay : " +delay);
+                    Thread.sleep(delay);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

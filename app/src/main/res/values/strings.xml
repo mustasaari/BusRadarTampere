@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Bus Radar Tampere</string>
-    <string name="title_activity_maps">Map</string>
+    <string name="app_name">Bus Tracker Tampere</string>
+    <string name="title_activity_maps">Bus Tracker Tampere</string>
 </resources>

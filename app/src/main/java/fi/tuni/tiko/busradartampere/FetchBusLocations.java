@@ -33,7 +33,7 @@ public class FetchBusLocations extends AsyncTask<Void, Void, String> {
 
         String result = "";
 
-        Log.d("BRT", "LATAUS ALKAA");
+        //Log.d("BRT", "LATAUS ALKAA");
 
         try {
             //URL url = new URL("http://data.itsfactory.fi/journeys/api/1/vehicle-activity");
@@ -67,7 +67,7 @@ public class FetchBusLocations extends AsyncTask<Void, Void, String> {
             //result += (char) myChar;
             //Log.d("BT", "" +(char) myChar);
             //}
-            Log.d("BT", "result hommattu");
+            //Log.d("BRT", "Got result");
 
             if (inputStream != null) {
                 inputStream.close();
@@ -84,14 +84,11 @@ public class FetchBusLocations extends AsyncTask<Void, Void, String> {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        Log.d("BT", "tekeekohan tämän");
         return result;
     }
 
     @Override
     protected void onPostExecute(String result) {
-        Log.d("BT", "entä tämän");
         //mainActivity.clearMyMap();
 
         JSONObject jsonObject = new JSONObject();

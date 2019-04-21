@@ -32,15 +32,13 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
 
         String result = "";
 
-        Log.d("BRT", "kaynnistyisko");
-
         try {
             URL url = new URL(routeURL);
 
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
             inputStream = httpURLConnection.getInputStream();
 
-            Log.d("BRT", "URL : " +routeURL);
+            //Log.d("BRT", "Route URL : " +routeURL);
 
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 
@@ -48,11 +46,8 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
 
             while (text != null) {
                 text = bufferedReader.readLine();
-
-                Log.d("BT", "" +text);
                 result += text;
             }
-            Log.d("BRT", "result hommattu");
             if (inputStream != null) {
                 inputStream.close();
             }
@@ -67,7 +62,7 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
 
     @Override
     protected void onPostExecute(String result) {
-        Log.d("BRT", "routen piirto");
+        //Log.d("BRT", "Draw Route");
         //mainActivity.clearMyMap();
 
         JSONObject jsonObject;
@@ -79,7 +74,7 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
 
 
         String route = "";
-        Log.d("BRT", "result tulostus : " +result);
+        //Log.d("BRT", "Route result : " +result);
 
         try {
             jsonObject = new JSONObject(result);
@@ -91,17 +86,17 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
                 json5 = json4.getJSONObject(i);
                 json6 = json5.getJSONObject("stopPoint");
                 String[] latlonArray = json6.getString("location").split(",");
-                Log.d("BRT", "latitude : " + latlonArray[0]);
-                Log.d("BRT", "longitude : " +latlonArray[1]);
+                //Log.d("BRT", "latitude : " + latlonArray[0]);
+                //Log.d("BRT", "longitude : " +latlonArray[1]);
                 Double lat = Double.parseDouble(latlonArray[0]);
                 Double lon = Double.parseDouble(latlonArray[1]);
 
                 mainActivity.drawBusStop(lat, lon);
             }
 
-            Log.d("BRT","tulsota route : " +json4.toString());
+            //Log.d("BRT","Print route : " +json4.toString());
         } catch (JSONException e) {
-            Log.d("BRT", "json exeption");
+            //Log.d("BRT", "json exception");
             e.printStackTrace();
         }
 
