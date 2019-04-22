@@ -17,23 +17,47 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+/**
+ * Asynctask class for fetching bus locations
+ *
+ * @author Mikko Mustasaari
+ * @version 2019.0422
+ * @since 1.0
+ */
+
 public class FetchBusLocations extends AsyncTask<Void, Void, String> {
 
+    /*
+     * Stores received data as String
+     */
+
     String data = "";
+
     InputStream inputStream = null;
 
+    /*
+     * References MapsActivity
+     */
+
     MapsActivity mainActivity;
+
+    /*
+     * Constructor
+     */
 
     public FetchBusLocations(MapsActivity a) {
         mainActivity = a;
     }
 
+    /*
+     * Fetch json information from Journeys API
+     * Add information to result String line by line until everything is fecthed
+     */
+
     @Override
     protected String doInBackground(Void... voids) {
 
         String result = "";
-
-        //Log.d("BRT", "LATAUS ALKAA");
 
         try {
             //URL url = new URL("http://data.itsfactory.fi/journeys/api/1/vehicle-activity");
@@ -49,25 +73,10 @@ public class FetchBusLocations extends AsyncTask<Void, Void, String> {
 
             while (text != null) {
                 text = bufferedReader.readLine();
-                //if (text != null) {
-                //if (text.contains("lineRef")) {
-                //    Log.d("BT", " " +text);
-                //}
-                Log.d("BT", "" +text);
                 result += text;
-                //}
-                //if (text.contains("lineRef") && !text.equals("")) {
-                //Log.d("BT", "" + text);
-                //data = data + text;
-                //}
+
                 //curl -X GET http://data.itsfactory.fi/journeys/api/1/vehicle-activity?lineRef=80
             }
-            //int myChar;
-            //while ((myChar = inputStream.read() ) != -1) {
-            //result += (char) myChar;
-            //Log.d("BT", "" +(char) myChar);
-            //}
-            //Log.d("BRT", "Got result");
 
             if (inputStream != null) {
                 inputStream.close();
@@ -87,21 +96,20 @@ public class FetchBusLocations extends AsyncTask<Void, Void, String> {
         return result;
     }
 
+    /*
+     * Return result
+     */
+
     @Override
     protected void onPostExecute(String result) {
-        //mainActivity.clearMyMap();
 
         JSONObject jsonObject = new JSONObject();
-
         try {
             jsonObject = new JSONObject(result);
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
-        //mainActivity.startUpdateMarkers(jsonObject);
-
-        //mainActivity.fetchAgain();
         mainActivity.startUpdateMarkers(result);
 
         super.onPostExecute(result);

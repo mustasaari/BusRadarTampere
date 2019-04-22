@@ -29,11 +29,31 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * Activity class for filtering bus routes.
+ * This class only gets information about routes that were found during application running time.
+ * When user disables lines, they will be stored on preferences in case that line is not found
+ * next time user start application so that user can see disabled lines that are not present that time.
+ * When line is enabled again the preference is removed.
+ *
+ * @author Mikko Mustasaari
+ * @version 2019.0422
+ * @since 1.0
+ */
+
 public class FilterActivity extends AppCompatActivity {
+
+    /*
+     * Lists for route informations
+     */
 
     ArrayList<String> lines = new ArrayList<>();
     ArrayList<String> filteredLines = new ArrayList<>();
     SharedPreferences.Editor editor;
+
+    /*
+     * Try to do some sorting for lines and draw switched for lines
+     */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,19 +65,14 @@ public class FilterActivity extends AppCompatActivity {
 
         SharedPreferences sharedpreferences = getSharedPreferences("fi.tuni.tiko.busradartampere", Context.MODE_PRIVATE);
         editor = sharedpreferences.edit();
-        //SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
 
         LinearLayout linearL = (LinearLayout) findViewById(R.id.filterlinearlayout);
-
-        //Collections.sort(lines);
 
         for(int i = 0; i < 200; i++) {
             for(String j : lines) {
                 String withoutLetters = j.replaceAll("[^\\d]", "" );
-                //Log.d("BRT", "without letters : " +withoutLetters);
                 if (i == Integer.parseInt(withoutLetters)) {
                     filteredLines.add(j);
-                    //lines.remove(j);
                 }
             }
         }
@@ -79,12 +94,9 @@ public class FilterActivity extends AppCompatActivity {
             switc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     if (isChecked) {
-                        //Log.d("BRT", "enabled" +buttonView.getText());
-                        //editor.putString(""+buttonView.getText(), "show");
                         editor.remove("" +buttonView.getText());
                         editor.apply();
                     } else {
-                        //Log.d("BRT", "disabled" +buttonView.getText());
                         editor.putString(""+buttonView.getText(), "hide");
                         editor.apply();
                     }
@@ -97,10 +109,8 @@ public class FilterActivity extends AppCompatActivity {
         //Create buttons for lines that have saved preferences but are not currently operating
         Map<String, ?> allEntries = sharedpreferences.getAll();
         for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
-            Log.d("BRT", entry.getKey() + ": " + entry.getValue().toString());
 
             if (!lines.contains(entry.getKey())) {
-                //Log.d("BRT", "should create button for line " +entry.getKey());
 
                 Switch switc = new Switch(this);
                 switc.setText(entry.getKey());
@@ -117,13 +127,9 @@ public class FilterActivity extends AppCompatActivity {
                 switc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                         if (isChecked) {
-                            //Log.d("BRT", "enabled" +buttonView.getText());
-                            //editor.putString(""+buttonView.getText(), "show");
-                            //editor.apply();
                             editor.remove("" +buttonView.getText());
                             editor.apply();
                         } else {
-                            //Log.d("BRT", "disabled" +buttonView.getText());
                             editor.putString(""+buttonView.getText(), "hide");
                             editor.apply();
                         }
@@ -135,7 +141,6 @@ public class FilterActivity extends AppCompatActivity {
             }
         }
 
-        //Log.d("BRT","filter activity loaded");
     }
 
     public void createSwitchButton() {}

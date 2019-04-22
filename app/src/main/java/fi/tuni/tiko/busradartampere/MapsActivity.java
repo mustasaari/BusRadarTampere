@@ -43,7 +43,23 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Main-class of program
+ *
+ * This program fetches bus information from tampereen joukkoliikenne avoin data Journeys API
+ * and draws location of busses and routes on google map. User can also see their own location
+ * as red dor when GPS-information is available. Shown lines can be filtered from FilterActivity.
+ *
+ * @author Mikko Mustasaari
+ * @version 2019.0422
+ * @since 1.0
+ */
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+
+    /**
+     * Arrays for storing marker-data and references to map and messagereceiver.
+     */
 
     private GoogleMap mMap;
     BroadcastReceiver mMessageReceiver;
@@ -52,9 +68,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ArrayList<String> allLines = new ArrayList<>();
     ArrayList<Polyline> polyLines = new ArrayList<>();
 
+    /**
+     * States for applicetion lifecycle. Stop when minimized and faster first fetch.
+     */
+
     boolean linesAdded = false;
     boolean firstUpdate = true;
     boolean appRunning = false;
+
+    /**
+     * Bus image data
+     */
 
     Bitmap busImageNorth;
     Bitmap busImageWest;
@@ -68,11 +92,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Bitmap busstop;
     Bitmap userLocation;
 
+    /**
+     * Shared preferences
+     */
+
     SharedPreferences sharedpreferences;
+
+    /**
+     * GPS-location
+     */
 
     LocationManager locationManager;
     Listener locationListener;
     Marker userLocationMarker;
+
+    /*
+     * Oncreate is initial setup of application.
+     * Setup images. Setup map. Setup messagereceiver that updates bus locations.
+     */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,7 +143,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMessageReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                //Log.d("BT", "ollaanko taalla55555555555");
                 // Extract data included in the Intent
                 boolean restart = intent.getBooleanExtra("restart", false);
                 if (restart) {
@@ -127,7 +163,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         addBusMarker(lat, lon, line, vehicleRef, routeURL);
                     }
                     else {
-                        //Log.d("BRT","remove marker : " +line);
                         for (Marker marker : markers) {
                             if (marker.getTitle().equals(line)) {
                                 markers.remove(marker);
@@ -153,7 +188,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         process.execute();
     }
 
-
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -167,8 +201,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        //Set map style
         mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.style_json));
 
+        //Marker onclick listener
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
@@ -181,23 +218,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        // Add a marker in Tampere and move the camera
+        // Create latitude longitude location with coordinates of Tampere
         LatLng tampere = new LatLng(61.49911, 23.78712);
 
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(tampere));
+        //Set camera to Tampere location
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tampere, 10f));
         mMap.setMaxZoomPreference(100f);
         googleMap.getUiSettings().setMapToolbarEnabled(false);
 
+        //Try get GPS location
         getGPSLocation();
     }
 
-    //places bus marker on map
+    /*
+     * Add new marker for bus
+     *
+     * @param lat latitude of bus
+     * @param lon longitude of bus
+     * @param line vehicle line name
+     * @param vehicleRef unique vehicle id
+     * @param routeURL url for fetching route information if marker is clicked
+     */
+
     public void addBusMarker(Double lat, Double lon, String line, String vehicleRef, String routeURL) {
 
         double oldLat = 0;
         double oldLon = 0;
 
+        //if vehicle is alredy found in markers array, removes old marker and draws new one becouse direction has possibly changed
         for (Marker x : markers) {
             if (x.getSnippet().equals(vehicleRef)) {
                 oldLat = x.getPosition().latitude;
@@ -205,27 +253,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 markers.remove(x);
                 x.remove();
                 break;
-                //markers.remove(x);
             }
         }
 
+        //calculate vehicle direction based on old and new position
         double directionLat = lat - oldLat;
         double directionLon = lon - oldLon;
         double degrees = Math.atan2(directionLon , directionLat);
         int degrees2 = (int) Math.toDegrees(degrees);
 
-        LatLng newPoint = new LatLng(lat, lon);     //TOIMIVA!
-        Marker marker = mMap.addMarker(new MarkerOptions().position(newPoint).title(line).anchor(0.5f,0.5f));//TOIMIVA!
-        marker.setIcon(BitmapDescriptorFactory.fromBitmap(textAsBitmap(line, 50, degrees2)));     // TOIMIVA   //SETICON KAATAA???
+        //Start drawing new marker
+        LatLng newPoint = new LatLng(lat, lon);
+        Marker marker = mMap.addMarker(new MarkerOptions().position(newPoint).title(line).anchor(0.5f,0.5f));
+
+        //Set icon of marker
+        marker.setIcon(BitmapDescriptorFactory.fromBitmap(textAsBitmap(line, 50, degrees2)));
         marker.setSnippet(vehicleRef);
 
+        //Assing BusTagObject as tag for marke containing routeURL
         BusTagObject tag = new BusTagObject(routeURL);
         marker.setTag(tag);
 
+        //Finally add marker to array
         markers.add(marker);
     }
 
-    //Add bus line text to bitmap
+    /*
+     * Draw bus bitmap based on direction and line name
+     *
+     * @param text to write on bus icon
+     * @param textSize size of text to be drawn
+     * param degrees calculated direction of bus
+     *
+     */
+
     public Bitmap textAsBitmap(String text, float textSize, int degrees) {
 
         //long time = System.nanoTime();  //Debug for how long bitmap drawing takes
@@ -249,7 +310,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return busImageScaled;
     }
 
-    //returns corrent bitmap for bus based on direction
+    /*
+     * Return correct Bus bitmap based on direction
+     * @param direction in degrees
+     * @return correct bitmap based on direction
+     */
+
     public Bitmap getBusDirectionImage(int direction) {
 
         if (direction == 0) {
@@ -281,7 +347,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    //start service that does timing for marker placement
+    /*
+     * Start service that does timing for marker placement.
+     *
+     * @param busdata data containing all locations of busses
+     *
+     */
     public void startUpdateMarkers(String busData) {
 
         Intent i = new Intent(this, UpdateMarkers.class);
@@ -301,7 +372,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         startService(i);
     }
 
-    //restart fetching process
+    /*
+     * Method for restarting the fetching process
+     */
+
     public void fetchAgain() {
 
         if (appRunning) {
@@ -310,11 +384,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    /*
+     * Method called when bus marker is clicked.
+     * Starts process of fetching route and clears old lines from map.
+     *
+     * @param url to route info
+     */
+
     public void drawRoute(String url) {
         clearMarkers();
         FetchRoute process = new FetchRoute(this, url);
         process.execute();
     }
+
+    /*
+     * Method fromdrawing locations of bus stops and route
+     * Bus stops are not currently drawn
+     * @param lat latitude of bus stop
+     * @param lon longitude of bus stop
+     */
 
     public void drawBusStop(Double lat, Double lon) {
 
@@ -347,7 +435,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    //Clear route
+    /*
+     * Clear route from map
+     */
+
     public void clearMarkers() {
         for (Marker marker : markersRoute) {
             marker.remove();
@@ -358,14 +449,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         polyLines.clear();
     }
 
-    //Filter button
+    /*
+     * Called when filter button on main activity is pressed
+     */
+
     public void launchFilterActivity(View view) {
         Intent intent = new Intent(this, FilterActivity.class);
         intent.putStringArrayListExtra("allLines", allLines);
         startActivity(intent);
     }
 
-    //lifecycle methods for stopping downloads and faster first drawing
+    /*
+     * lifecycle methods for stopping downloads and faster first drawing
+     */
+
     protected void onResume() {
         super.onResume();
         appRunning = true;
@@ -373,13 +470,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         fetchAgain();
     }
 
-    //lifecycle methods for stopping downloads and faster first drawing
+    /*
+     * lifecycle methods for stopping downloads and faster first drawing
+     */
+
     public void onPause() {
         super.onPause();
         appRunning = false;
     }
 
-    //User GPS location permissions.
+    /*
+     * User GPS location permissions. If permission not found ask for permissions. If not create locationlistener.
+     */
+
     public void getGPSLocation(){
         //Log.d("BRT", "getGPS");
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -403,7 +506,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    //GPS Listener class
+    /*
+     * GPS location listener inner-class
+     * Draws user on map when GPS-location is updated.
+     * Will not show user until GPS is found
+     */
+
     class Listener implements LocationListener {
 
         @Override

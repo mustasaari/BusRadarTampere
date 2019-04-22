@@ -14,6 +14,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * Service class for drawing busses on map and creating delay between draws.
+ * There is no delay between draws on first fetch.
+ *
+ * @author Mikko Mustasaari
+ * @version 2019.0422
+ * @since 1.0
+ */
+
 public class UpdateMarkers extends IntentService {
 
     JSONObject busData;
@@ -37,6 +46,9 @@ public class UpdateMarkers extends IntentService {
         super(name);
     }
 
+    /*
+     * Get useful information all busdata, draw busses and take small delays between draws
+     */
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -92,6 +104,11 @@ public class UpdateMarkers extends IntentService {
 
     }
 
+    /*
+     * Send message to messageReceiver in MapsActivity.
+     * MessageReceiver updates bus location on map basen on sent data
+     */
+
     private void sendMessage(Double lat, Double lon, String line, String vehicleRef, String routeURL) {
         Intent intent = new Intent("my-event");
         // add data
@@ -104,6 +121,12 @@ public class UpdateMarkers extends IntentService {
         intent.putExtra("routeurl", routeURL);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
+
+    /*
+     * Send restart message to messageReceiver in MapsActivity.
+     * MessageReceiver knows to start update process again when restart info from this method is sent.
+     * This is when all bus locations have been sent.
+     */
 
     private void sendMessageToStartOver() {
         Intent intent = new Intent("my-event");

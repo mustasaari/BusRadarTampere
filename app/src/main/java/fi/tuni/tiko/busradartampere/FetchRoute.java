@@ -15,17 +15,35 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+/**
+ * Asynctask class for fetching route information
+ *
+ * @author Mikko Mustasaari
+ * @version 2019.0422
+ * @since 1.0
+ */
+
 public class FetchRoute extends AsyncTask<Void,Void,String> {
 
     MapsActivity mainActivity;
     InputStream inputStream = null;
     String routeURL = "";
 
+    /*
+     * Constructor
+     * @param reference to mainActivity
+     * @param routeURL to fetch route information from
+     */
+
     public FetchRoute(MapsActivity maps, String routeURL) {
 
         this.mainActivity = maps;
         this.routeURL = routeURL;
     }
+
+    /*
+     * Fetch route information and add it to result stinr until done
+     */
 
     @Override
     protected String doInBackground(Void... voids) {
@@ -60,10 +78,14 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
         return result;
     }
 
+    /**
+     * Method for extracting needed information from fetched data
+     *
+     * @param result fetched data from doInBackground-method
+     */
+
     @Override
     protected void onPostExecute(String result) {
-        //Log.d("BRT", "Draw Route");
-        //mainActivity.clearMyMap();
 
         JSONObject jsonObject;
         JSONArray json2;
@@ -72,9 +94,7 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
         JSONObject json5;
         JSONObject json6;
 
-
         String route = "";
-        //Log.d("BRT", "Route result : " +result);
 
         try {
             jsonObject = new JSONObject(result);
@@ -86,17 +106,12 @@ public class FetchRoute extends AsyncTask<Void,Void,String> {
                 json5 = json4.getJSONObject(i);
                 json6 = json5.getJSONObject("stopPoint");
                 String[] latlonArray = json6.getString("location").split(",");
-                //Log.d("BRT", "latitude : " + latlonArray[0]);
-                //Log.d("BRT", "longitude : " +latlonArray[1]);
                 Double lat = Double.parseDouble(latlonArray[0]);
                 Double lon = Double.parseDouble(latlonArray[1]);
 
                 mainActivity.drawBusStop(lat, lon);
             }
-
-            //Log.d("BRT","Print route : " +json4.toString());
         } catch (JSONException e) {
-            //Log.d("BRT", "json exception");
             e.printStackTrace();
         }
 
